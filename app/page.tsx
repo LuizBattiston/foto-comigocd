@@ -646,23 +646,31 @@ export default function Home() {
 
         </div>
 
-        {/* RODAPÉ */}
-
         <footer className="mt-10 text-center">
 
-          <div className="mx-auto mb-6 h-1.5 max-w-md rounded-full bg-[#FFCC00]">
-            <div className="h-full w-2/3 rounded-full bg-[#00843D]" />
-          </div>
+  <div className="mx-auto mb-6 h-1.5 max-w-md rounded-full bg-[#FFCC00]">
+    <div className="h-full w-2/3 rounded-full bg-[#00843D]" />
+  </div>
 
-          <p className="text-lg font-black uppercase">
-            André Salineiro
-          </p>
+  <p className="text-lg font-black uppercase">
+    André Salineiro
+  </p>
 
-          <p className="mt-1 text-sm font-bold uppercase tracking-[0.2em] text-white/70">
-            Deputado Estadual • 22067
-          </p>
+  <p className="mt-1 text-sm font-bold uppercase tracking-[0.2em] text-white/70">
+    Deputado Estadual • 22067
+  </p>
 
-        </footer>
+  {/* INFORMAÇÕES LEGAIS DA CAMPANHA */}
+
+  <div className="mx-auto mt-6 max-w-4xl border-t border-white/15 pt-5">
+
+    <p className="px-3 text-[11px] font-semibold uppercase leading-5 tracking-[0.08em] text-white/80 sm:text-xs md:text-sm">
+      PROPAGANDA ELEITORAL | ANDRÉ SALINEIRO 22067 | CNPJ 68.345.672/0001-72
+    </p>
+
+  </div>
+
+</footer>
 
         <canvas
           ref={canvasRef}
