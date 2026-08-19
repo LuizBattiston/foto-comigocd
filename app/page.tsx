@@ -661,11 +661,14 @@ export default function Home() {
   </p>
 
   {/* INFORMAÇÕES LEGAIS DA CAMPANHA */}
+  <div className="mx-auto mt-6 max-w-5xl border-t border-white/15 px-4 pt-5">
 
-  <div className="mx-auto mt-6 max-w-4xl border-t border-white/15 pt-5">
+    <p className="text-[11px] font-bold uppercase leading-5 tracking-[0.06em] text-white/90 sm:text-xs md:text-sm">
+      PROPAGANDA ELEITORAL | ANDRÉ SALINEIRO | CNPJ 68.345.672/0001-72
+    </p>
 
-    <p className="px-3 text-[11px] font-semibold uppercase leading-5 tracking-[0.08em] text-white/80 sm:text-xs md:text-sm">
-      PROPAGANDA ELEITORAL | ANDRÉ SALINEIRO 22067 | CNPJ 68.345.672/0001-72
+    <p className="mx-auto mt-2 max-w-4xl text-[9px] font-medium leading-4 text-white/60 sm:text-[10px] md:text-[11px]">
+      Coligação Fazendo o Futuro Acontecer (Federação União Progressista – União Brasil e PP, PL, PSD, Republicanos, Federação PSDB-Cidadania, MDB, Avante, Podemos)
     </p>
 
   </div>
