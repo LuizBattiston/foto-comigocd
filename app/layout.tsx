@@ -13,24 +13,21 @@ export const metadata: Metadata = {
     url: "https://foto-comigocd.vercel.app",
     siteName: "Foto com André Salineiro",
     images: [
-      {
-        url: "/compartilhamento.png",
-        width: 1200,
-        height: 630,
-        alt: "André Salineiro 22067",
-      },
-    ],
-    type: "website",
+  {
+    url: "https://foto-comigocd.vercel.app/compartilhamento.png",
+    width: 1200,
+    height: 630,
+    alt: "André Salineiro 22067",
   },
+],
 
   twitter: {
-    card: "summary_large_image",
-    title: "Foto com André Salineiro | 22067",
-    description:
-      "Monte sua foto personalizada e compartilhe nas redes sociais.",
-    images: ["/compartilhamento.png"],
-  },
-};
+  card: "summary_large_image",
+  title: "Foto com André Salineiro | 22067",
+  description:
+    "Monte sua foto personalizada e compartilhe nas redes sociais.",
+  images: ["https://foto-comigocd.vercel.app/compartilhamento.png"],
+},
 
 export default function RootLayout({
   children,
