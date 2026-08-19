@@ -182,12 +182,13 @@ export default function Home() {
     }
   }
 
-  function function downloadPhoto() {
+  function downloadPhoto() {
   if (!result) return;
 
   const isIOS =
     /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    (navigator.platform === "MacIntel" &&
+      navigator.maxTouchPoints > 1);
 
   if (isIOS) {
     const newWindow = window.open();
@@ -197,8 +198,12 @@ export default function Home() {
         <!DOCTYPE html>
         <html lang="pt-BR">
           <head>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta
+              name="viewport"
+              content="width=device-width, initial-scale=1.0"
+            >
             <title>Salvar sua foto</title>
+
             <style>
               body {
                 margin: 0;
@@ -218,19 +223,13 @@ export default function Home() {
                 margin: 20px auto;
               }
 
-              h2 {
-                margin-top: 20px;
-              }
-
               p {
                 line-height: 1.5;
-                opacity: 0.85;
               }
             </style>
           </head>
 
           <body>
-
             <h2>Sua foto está pronta!</h2>
 
             <p>
@@ -242,7 +241,6 @@ export default function Home() {
               src="${result}"
               alt="Foto personalizada"
             />
-
           </body>
         </html>
       `);
@@ -254,7 +252,6 @@ export default function Home() {
   }
 
   const link = document.createElement("a");
-
   link.href = result;
   link.download = "foto-andre-salineiro-22067.png";
 
@@ -262,6 +259,20 @@ export default function Home() {
   link.click();
   document.body.removeChild(link);
 }
+function resetPhoto() {
+  setPhoto(null);
+  setResult(null);
+  setZoom(1);
+  setPosition({ x: 0, y: 0 });
+  setSelectedFrame("/moldura-1.png");
+}
+
+function resetPosition() {
+  setZoom(1);
+  setPosition({ x: 0, y: 0 });
+  setResult(null);
+}
+return (
     <main
       className="min-h-screen px-3 py-5 text-white sm:px-6 sm:py-8"
       style={{
