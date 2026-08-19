@@ -11,6 +11,8 @@ export default function Home() {
   const [photo, setPhoto] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
 
+  const [selectedFrame, setSelectedFrame] = useState("/moldura-1.png");
+
   const [zoom, setZoom] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
 
@@ -42,6 +44,11 @@ export default function Home() {
     setResult(null);
     setZoom(1);
     setPosition({ x: 0, y: 0 });
+  }
+
+  function selectFrame(frame: string) {
+    setSelectedFrame(frame);
+    setResult(null);
   }
 
   function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
@@ -106,7 +113,7 @@ export default function Home() {
 
     try {
       const userPhoto = await loadImage(photo);
-      const frame = await loadImage("/moldura-campanha.png");
+      const frame = await loadImage(selectedFrame);
 
       const SIZE = 1000;
 
@@ -163,17 +170,14 @@ export default function Home() {
         SIZE
       );
 
-      const finalImage = canvas.toDataURL(
-        "image/png",
-        1
-      );
+      const finalImage = canvas.toDataURL("image/png", 1);
 
       setResult(finalImage);
     } catch (error) {
       console.error(error);
 
       alert(
-        "Não foi possível gerar a imagem. Verifique se moldura-campanha.png está dentro da pasta public."
+        "Não foi possível gerar a imagem. Verifique se moldura-1.png e moldura-2.png estão dentro da pasta public."
       );
     }
   }
@@ -196,6 +200,7 @@ export default function Home() {
     setResult(null);
     setZoom(1);
     setPosition({ x: 0, y: 0 });
+    setSelectedFrame("/moldura-1.png");
   }
 
   function resetPosition() {
@@ -214,7 +219,7 @@ export default function Home() {
     >
       <div className="mx-auto max-w-6xl">
 
-        {/* TOPO */}
+        {/* CABEÇALHO */}
 
         <header className="mb-10 text-center">
 
@@ -224,7 +229,7 @@ export default function Home() {
           </div>
 
           <h1 className="text-4xl font-black uppercase leading-tight sm:text-6xl">
-            André
+            André{" "}
             <span className="text-[#00A651]">
               Salineiro
             </span>
@@ -239,13 +244,13 @@ export default function Home() {
           </div>
 
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-7 text-white/80">
-            Monte sua foto personalizada, compartilhe nas redes
-            sociais e faça parte dessa campanha.
+            Escolha sua foto, selecione a moldura que preferir
+            e crie sua imagem personalizada.
           </p>
 
         </header>
 
-        {/* FAIXA VERDE / AMARELA */}
+        {/* FAIXA */}
 
         <div className="relative mb-10 h-5 overflow-hidden rounded-full bg-[#FFCC00]">
           <div className="absolute bottom-0 left-0 h-2/3 w-full bg-[#00843D]" />
@@ -260,11 +265,11 @@ export default function Home() {
           <section className="rounded-[28px] border border-white/10 bg-white p-5 text-slate-950 shadow-2xl sm:p-7">
 
             <p className="text-sm font-black uppercase tracking-widest text-[#003B73]">
-              Foto de perfil
+              Foto personalizada
             </p>
 
             <h2 className="mt-2 text-2xl font-black text-[#001F46]">
-              Monte sua foto personalizada
+              Monte sua foto
             </h2>
 
             <div className="mt-5 rounded-2xl border border-green-200 bg-green-50 p-4">
@@ -274,9 +279,8 @@ export default function Home() {
               </p>
 
               <p className="mt-1 text-sm leading-6 text-slate-600">
-                Escolha uma foto nítida e bem iluminada. Depois,
-                arraste e ajuste o zoom até encontrar o melhor
-                enquadramento.
+                Escolha uma foto nítida e bem iluminada.
+                Você poderá ajustar posição e zoom antes de gerar.
               </p>
 
             </div>
@@ -286,6 +290,7 @@ export default function Home() {
                 htmlFor="photo"
                 className="mt-6 flex aspect-square cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#00843D] bg-[#F4FBF6] p-6 text-center transition hover:bg-green-50"
               >
+
                 <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#00843D] text-4xl text-white">
                   📷
                 </div>
@@ -295,8 +300,7 @@ export default function Home() {
                 </p>
 
                 <p className="mt-2 max-w-xs text-sm text-slate-500">
-                  Você pode utilizar uma foto vertical,
-                  horizontal ou quadrada.
+                  Pode ser vertical, horizontal ou quadrada.
                 </p>
 
                 <span className="mt-6 rounded-xl bg-[#003B73] px-6 py-3 font-bold text-white">
@@ -310,14 +314,98 @@ export default function Home() {
                   onChange={handlePhotoChange}
                   className="hidden"
                 />
+
               </label>
             ) : (
               <>
-                <p className="mt-5 text-sm font-medium text-slate-500">
+
+                {/* ESCOLHA DA MOLDURA */}
+
+                <div className="mt-6">
+
+                  <p className="font-black text-[#001F46]">
+                    Escolha sua moldura
+                  </p>
+
+                  <p className="mt-1 text-sm text-slate-500">
+                    Toque em uma opção para visualizar.
+                  </p>
+
+                  <div className="mt-4 grid grid-cols-2 gap-4">
+
+                    {/* MOLDURA 1 */}
+
+                    <button
+                      type="button"
+                      onClick={() => selectFrame("/moldura-1.png")}
+                      className={`overflow-hidden rounded-2xl border-4 transition ${
+                        selectedFrame === "/moldura-1.png"
+                          ? "border-[#00843D] shadow-lg"
+                          : "border-slate-200 hover:border-slate-300"
+                      }`}
+                    >
+                      <div className="relative aspect-square bg-slate-100">
+
+                        <img
+                          src="/moldura-1.png"
+                          alt="Moldura 1"
+                          className="absolute inset-0 h-full w-full object-contain"
+                        />
+
+                      </div>
+
+                      <div
+                        className={`py-3 text-sm font-black ${
+                          selectedFrame === "/moldura-1.png"
+                            ? "bg-[#00843D] text-white"
+                            : "bg-slate-100 text-[#003B73]"
+                        }`}
+                      >
+                        OPÇÃO 1
+                      </div>
+                    </button>
+
+                    {/* MOLDURA 2 */}
+
+                    <button
+                      type="button"
+                      onClick={() => selectFrame("/moldura-2.png")}
+                      className={`overflow-hidden rounded-2xl border-4 transition ${
+                        selectedFrame === "/moldura-2.png"
+                          ? "border-[#00843D] shadow-lg"
+                          : "border-slate-200 hover:border-slate-300"
+                      }`}
+                    >
+                      <div className="relative aspect-square bg-slate-100">
+
+                        <img
+                          src="/moldura-2.png"
+                          alt="Moldura 2"
+                          className="absolute inset-0 h-full w-full object-contain"
+                        />
+
+                      </div>
+
+                      <div
+                        className={`py-3 text-sm font-black ${
+                          selectedFrame === "/moldura-2.png"
+                            ? "bg-[#00843D] text-white"
+                            : "bg-slate-100 text-[#003B73]"
+                        }`}
+                      >
+                        OPÇÃO 2
+                      </div>
+                    </button>
+
+                  </div>
+
+                </div>
+
+                {/* EDITOR POWERCLIP */}
+
+                <p className="mt-6 text-sm font-medium text-slate-500">
                   Arraste sua foto para posicioná-la dentro da moldura.
                 </p>
-
-                {/* POWERCLIP */}
 
                 <div
                   ref={previewRef}
@@ -355,11 +443,11 @@ export default function Home() {
                     }}
                   />
 
-                  {/* MOLDURA */}
+                  {/* MOLDURA SELECIONADA */}
 
                   <img
-                    src="/moldura-campanha.png"
-                    alt="Moldura André Salineiro"
+                    src={selectedFrame}
+                    alt="Moldura selecionada"
                     draggable={false}
                     className="pointer-events-none absolute inset-0 z-20 h-full w-full select-none object-fill"
                   />
@@ -403,9 +491,7 @@ export default function Home() {
                       step="0.01"
                       value={zoom}
                       onChange={(event) =>
-                        setZoom(
-                          Number(event.target.value)
-                        )
+                        setZoom(Number(event.target.value))
                       }
                       className="w-full accent-[#00843D]"
                     />
@@ -525,8 +611,8 @@ export default function Home() {
                   </p>
 
                   <p className="mt-2 text-sm text-white/60">
-                    Escolha uma foto, faça o enquadramento
-                    e clique em gerar.
+                    Escolha uma foto, selecione sua moldura,
+                    faça o enquadramento e clique em gerar.
                   </p>
 
                 </div>
