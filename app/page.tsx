@@ -182,34 +182,86 @@ export default function Home() {
     }
   }
 
-  function downloadPhoto() {
-    if (!result) return;
+  function function downloadPhoto() {
+  if (!result) return;
 
-    const link = document.createElement("a");
+  const isIOS =
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
-    link.href = result;
-    link.download = "foto-andre-salineiro-22067.png";
+  if (isIOS) {
+    const newWindow = window.open();
 
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    if (newWindow) {
+      newWindow.document.write(`
+        <!DOCTYPE html>
+        <html lang="pt-BR">
+          <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Salvar sua foto</title>
+            <style>
+              body {
+                margin: 0;
+                background: #001F46;
+                color: white;
+                font-family: Arial, sans-serif;
+                text-align: center;
+                padding: 20px;
+              }
+
+              img {
+                width: 100%;
+                max-width: 1000px;
+                height: auto;
+                border-radius: 16px;
+                display: block;
+                margin: 20px auto;
+              }
+
+              h2 {
+                margin-top: 20px;
+              }
+
+              p {
+                line-height: 1.5;
+                opacity: 0.85;
+              }
+            </style>
+          </head>
+
+          <body>
+
+            <h2>Sua foto está pronta!</h2>
+
+            <p>
+              Toque e segure a imagem abaixo e escolha
+              <strong>Salvar em Fotos</strong>.
+            </p>
+
+            <img
+              src="${result}"
+              alt="Foto personalizada"
+            />
+
+          </body>
+        </html>
+      `);
+
+      newWindow.document.close();
+    }
+
+    return;
   }
 
-  function resetPhoto() {
-    setPhoto(null);
-    setResult(null);
-    setZoom(1);
-    setPosition({ x: 0, y: 0 });
-    setSelectedFrame("/moldura-1.png");
-  }
+  const link = document.createElement("a");
 
-  function resetPosition() {
-    setZoom(1);
-    setPosition({ x: 0, y: 0 });
-    setResult(null);
-  }
+  link.href = result;
+  link.download = "foto-andre-salineiro-22067.png";
 
-  return (
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
     <main
       className="min-h-screen px-3 py-5 text-white sm:px-6 sm:py-8"
       style={{
