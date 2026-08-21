@@ -17,16 +17,25 @@ export default function Home() {
   const [position, setPosition] = useState({ x: 0, y: 0 });
 
   const [dragging, setDragging] = useState(false);
-
-  const [dragStart, setDragStart] = useState({
-    x: 0,
-    y: 0,
-    positionX: 0,
-    positionY: 0,
-  });
-
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const previewRef = useRef<HTMLDivElement | null>(null);
+
+  const pointersRef = useRef<Map<number, { x: number; y: number }>>(
+    new Map()
+  );
+
+  const dragStartRef = useRef<{
+    x: number;
+    y: number;
+    positionX: number;
+    positionY: number;
+  } | null>(null);
+
+  const pinchStartRef = useRef<{
+    distance: number;
+    zoom: number;
+  } | null>(null);
+
 
   function handlePhotoChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -38,47 +47,173 @@ export default function Home() {
       return;
     }
 
-    const url = URL.createObjectURL(file);
+    const reader = new FileReader();
 
-    setPhoto(url);
-    setResult(null);
-    setZoom(1);
-    setPosition({ x: 0, y: 0 });
+    reader.onload = () => {
+      const imageData = reader.result;
+
+      if (typeof imageData !== "string") {
+        alert("Não foi possível carregar essa imagem.");
+        return;
+      }
+
+      setPhoto(imageData);
+      setResult(null);
+      setZoom(1);
+      setPosition({ x: 0, y: 0 });
+    };
+
+    reader.onerror = () => {
+      alert("Não foi possível ler a foto selecionada.");
+    };
+
+    reader.readAsDataURL(file);
   }
 
+  function getPointerDistance() {
+    const pointers = Array.from(pointersRef.current.values());
+
+    if (pointers.length < 2) return 0;
+
+    const [p1, p2] = pointers;
+
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+
+    return Math.sqrt(dx * dx + dy * dy);
+  }
 
   function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
     if (!photo) return;
 
+    event.preventDefault();
+
     event.currentTarget.setPointerCapture(event.pointerId);
 
-    setDragging(true);
-
-    setDragStart({
+    pointersRef.current.set(event.pointerId, {
       x: event.clientX,
       y: event.clientY,
-      positionX: position.x,
-      positionY: position.y,
     });
+
+    // UM DEDO = ARRASTAR
+    if (pointersRef.current.size === 1) {
+      dragStartRef.current = {
+        x: event.clientX,
+        y: event.clientY,
+        positionX: position.x,
+        positionY: position.y,
+      };
+
+      setDragging(true);
+    }
+
+    // DOIS DEDOS = ZOOM
+    if (pointersRef.current.size === 2) {
+      setDragging(false);
+
+      pinchStartRef.current = {
+        distance: getPointerDistance(),
+        zoom,
+      };
+    }
   }
 
   function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
-    if (!dragging) return;
+    if (!pointersRef.current.has(event.pointerId)) return;
 
-    const deltaX = event.clientX - dragStart.x;
-    const deltaY = event.clientY - dragStart.y;
+    event.preventDefault();
 
-    setPosition({
-      x: dragStart.positionX + deltaX,
-      y: dragStart.positionY + deltaY,
+    pointersRef.current.set(event.pointerId, {
+      x: event.clientX,
+      y: event.clientY,
     });
+
+    // ZOOM COM DOIS DEDOS
+    if (
+      pointersRef.current.size === 2 &&
+      pinchStartRef.current
+    ) {
+      const currentDistance = getPointerDistance();
+
+      if (
+        currentDistance > 0 &&
+        pinchStartRef.current.distance > 0
+      ) {
+        const scale =
+          currentDistance /
+          pinchStartRef.current.distance;
+
+        const newZoom =
+          pinchStartRef.current.zoom * scale;
+
+        setZoom(
+          Math.min(
+            5,
+            Math.max(0.2, newZoom)
+          )
+        );
+      }
+
+      return;
+    }
+
+    // ARRASTAR COM UM DEDO
+    if (
+      pointersRef.current.size === 1 &&
+      dragStartRef.current
+    ) {
+      const deltaX =
+        event.clientX - dragStartRef.current.x;
+
+      const deltaY =
+        event.clientY - dragStartRef.current.y;
+
+      setPosition({
+        x: dragStartRef.current.positionX + deltaX,
+        y: dragStartRef.current.positionY + deltaY,
+      });
+    }
   }
 
   function handlePointerUp(event: PointerEvent<HTMLDivElement>) {
-    setDragging(false);
+    event.preventDefault();
 
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
+    pointersRef.current.delete(event.pointerId);
+
+    if (
+      event.currentTarget.hasPointerCapture(event.pointerId)
+    ) {
+      event.currentTarget.releasePointerCapture(
+        event.pointerId
+      );
+    }
+
+    // TERMINOU O ZOOM
+    if (pointersRef.current.size < 2) {
+      pinchStartRef.current = null;
+    }
+
+    // TODOS OS DEDOS SAÍRAM
+    if (pointersRef.current.size === 0) {
+      dragStartRef.current = null;
+      setDragging(false);
+      return;
+    }
+
+    // SOBROU UM DEDO DEPOIS DA PINÇA:
+    // começa um novo arraste a partir dali
+    if (pointersRef.current.size === 1) {
+      const remainingPointer =
+        Array.from(pointersRef.current.values())[0];
+
+      dragStartRef.current = {
+        x: remainingPointer.x,
+        y: remainingPointer.y,
+        positionX: position.x,
+        positionY: position.y,
+      };
+
+      setDragging(true);
     }
   }
 
@@ -255,7 +390,7 @@ export default function Home() {
   link.click();
   document.body.removeChild(link);
 }
-function resetPhoto() {
+  function resetPhoto() {
   setPhoto(null);
   setResult(null);
   setZoom(1);
@@ -263,12 +398,12 @@ function resetPhoto() {
   
 }
 
-function resetPosition() {
+  function resetPosition() {
   setZoom(1);
   setPosition({ x: 0, y: 0 });
   setResult(null);
 }
-return (
+  return (
     <main
       className="min-h-screen px-3 py-5 text-white sm:px-6 sm:py-8"
       style={{
@@ -381,7 +516,7 @@ return (
                 {/* EDITOR POWERCLIP */}
 
                 <p className="mt-6 text-sm font-medium text-slate-500">
-                  Arraste sua foto para posicioná-la dentro da moldura.
+                  Arraste para posicionar. Use dois dedos para aumentar ou diminuir o zoom.
                 </p>
 
                 <div
