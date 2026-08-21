@@ -11,7 +11,7 @@ export default function Home() {
   const [photo, setPhoto] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
 
-  const [selectedFrame, setSelectedFrame] = useState("/moldura-1.png");
+ 
 
   const [zoom, setZoom] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -46,10 +46,6 @@ export default function Home() {
     setPosition({ x: 0, y: 0 });
   }
 
-  function selectFrame(frame: string) {
-    setSelectedFrame(frame);
-    setResult(null);
-  }
 
   function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
     if (!photo) return;
@@ -113,7 +109,7 @@ export default function Home() {
 
     try {
       const userPhoto = await loadImage(photo);
-      const frame = await loadImage(selectedFrame);
+      const frame = await loadImage("/moldura-1.png");
 
       const SIZE = 1000;
 
@@ -177,7 +173,7 @@ export default function Home() {
       console.error(error);
 
       alert(
-        "Não foi possível gerar a imagem. Verifique se moldura-1.png e moldura-2.png estão dentro da pasta public."
+        "Não foi possível gerar a imagem. Verifique se moldura-1.png está dentro da pasta public."
       );
     }
   }
@@ -264,7 +260,7 @@ function resetPhoto() {
   setResult(null);
   setZoom(1);
   setPosition({ x: 0, y: 0 });
-  setSelectedFrame("/moldura-1.png");
+  
 }
 
 function resetPosition() {
@@ -307,7 +303,7 @@ return (
   </div>
 
   <p className="mx-auto mt-4 max-w-2xl px-2 text-sm leading-6 text-white/80 sm:mt-6 sm:text-lg sm:leading-7">
-    Escolha sua foto, selecione a moldura que preferir
+    Escolha sua foto, ajuste o enquadramento
     e crie sua imagem personalizada.
   </p>
 
@@ -382,88 +378,6 @@ return (
             ) : (
               <>
 
-                {/* ESCOLHA DA MOLDURA */}
-
-                <div className="mt-6">
-
-                  <p className="font-black text-[#001F46]">
-                    Escolha sua moldura
-                  </p>
-
-                  <p className="mt-1 text-sm text-slate-500">
-                    Toque em uma opção para visualizar.
-                  </p>
-
-                  <div className="mt-4 grid grid-cols-2 gap-4">
-
-                    {/* MOLDURA 1 */}
-
-                    <button
-                      type="button"
-                      onClick={() => selectFrame("/moldura-1.png")}
-                      className={`overflow-hidden rounded-2xl border-4 transition ${
-                        selectedFrame === "/moldura-1.png"
-                          ? "border-[#00843D] shadow-lg"
-                          : "border-slate-200 hover:border-slate-300"
-                      }`}
-                    >
-                      <div className="relative aspect-square bg-slate-100">
-
-                        <img
-                          src="/moldura-1.png"
-                          alt="Moldura 1"
-                          className="absolute inset-0 h-full w-full object-contain"
-                        />
-
-                      </div>
-
-                      <div
-                        className={`py-3 text-sm font-black ${
-                          selectedFrame === "/moldura-1.png"
-                            ? "bg-[#00843D] text-white"
-                            : "bg-slate-100 text-[#003B73]"
-                        }`}
-                      >
-                        OPÇÃO 1
-                      </div>
-                    </button>
-
-                    {/* MOLDURA 2 */}
-
-                    <button
-                      type="button"
-                      onClick={() => selectFrame("/moldura-2.png")}
-                      className={`overflow-hidden rounded-2xl border-4 transition ${
-                        selectedFrame === "/moldura-2.png"
-                          ? "border-[#00843D] shadow-lg"
-                          : "border-slate-200 hover:border-slate-300"
-                      }`}
-                    >
-                      <div className="relative aspect-square bg-slate-100">
-
-                        <img
-                          src="/moldura-2.png"
-                          alt="Moldura 2"
-                          className="absolute inset-0 h-full w-full object-contain"
-                        />
-
-                      </div>
-
-                      <div
-                        className={`py-3 text-sm font-black ${
-                          selectedFrame === "/moldura-2.png"
-                            ? "bg-[#00843D] text-white"
-                            : "bg-slate-100 text-[#003B73]"
-                        }`}
-                      >
-                        OPÇÃO 2
-                      </div>
-                    </button>
-
-                  </div>
-
-                </div>
-
                 {/* EDITOR POWERCLIP */}
 
                 <p className="mt-6 text-sm font-medium text-slate-500">
@@ -509,8 +423,8 @@ return (
                   {/* MOLDURA SELECIONADA */}
 
                   <img
-                    src={selectedFrame}
-                    alt="Moldura selecionada"
+                    src="/moldura-1.png"
+                    alt="Moldura da campanha"
                     draggable={false}
                     className="pointer-events-none absolute inset-0 z-20 h-full w-full select-none object-fill"
                   />
@@ -674,8 +588,8 @@ return (
                   </p>
 
                   <p className="mt-2 text-sm text-white/60">
-                    Escolha uma foto, selecione sua moldura,
-                    faça o enquadramento e clique em gerar.
+                    Escolha uma foto, faça o enquadramento
+                    e clique em gerar.
                   </p>
 
                 </div>
