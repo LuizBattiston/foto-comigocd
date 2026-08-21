@@ -11,22 +11,31 @@ export default function Home() {
   const [photo, setPhoto] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
 
-  const [selectedFrame, setSelectedFrame] = useState("/moldura-1.png");
+ 
 
   const [zoom, setZoom] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
 
   const [dragging, setDragging] = useState(false);
-
-  const [dragStart, setDragStart] = useState({
-    x: 0,
-    y: 0,
-    positionX: 0,
-    positionY: 0,
-  });
-
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const previewRef = useRef<HTMLDivElement | null>(null);
+
+  const pointersRef = useRef<Map<number, { x: number; y: number }>>(
+    new Map()
+  );
+
+  const dragStartRef = useRef<{
+    x: number;
+    y: number;
+    positionX: number;
+    positionY: number;
+  } | null>(null);
+
+  const pinchStartRef = useRef<{
+    distance: number;
+    zoom: number;
+  } | null>(null);
+
 
   function handlePhotoChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -38,51 +47,173 @@ export default function Home() {
       return;
     }
 
-    const url = URL.createObjectURL(file);
+    const reader = new FileReader();
 
-    setPhoto(url);
-    setResult(null);
-    setZoom(1);
-    setPosition({ x: 0, y: 0 });
+    reader.onload = () => {
+      const imageData = reader.result;
+
+      if (typeof imageData !== "string") {
+        alert("Não foi possível carregar essa imagem.");
+        return;
+      }
+
+      setPhoto(imageData);
+      setResult(null);
+      setZoom(1);
+      setPosition({ x: 0, y: 0 });
+    };
+
+    reader.onerror = () => {
+      alert("Não foi possível ler a foto selecionada.");
+    };
+
+    reader.readAsDataURL(file);
   }
 
-  function selectFrame(frame: string) {
-    setSelectedFrame(frame);
-    setResult(null);
+  function getPointerDistance() {
+    const pointers = Array.from(pointersRef.current.values());
+
+    if (pointers.length < 2) return 0;
+
+    const [p1, p2] = pointers;
+
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+
+    return Math.sqrt(dx * dx + dy * dy);
   }
 
   function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
     if (!photo) return;
 
+    event.preventDefault();
+
     event.currentTarget.setPointerCapture(event.pointerId);
 
-    setDragging(true);
-
-    setDragStart({
+    pointersRef.current.set(event.pointerId, {
       x: event.clientX,
       y: event.clientY,
-      positionX: position.x,
-      positionY: position.y,
     });
+
+    // UM DEDO = ARRASTAR
+    if (pointersRef.current.size === 1) {
+      dragStartRef.current = {
+        x: event.clientX,
+        y: event.clientY,
+        positionX: position.x,
+        positionY: position.y,
+      };
+
+      setDragging(true);
+    }
+
+    // DOIS DEDOS = ZOOM
+    if (pointersRef.current.size === 2) {
+      setDragging(false);
+
+      pinchStartRef.current = {
+        distance: getPointerDistance(),
+        zoom,
+      };
+    }
   }
 
   function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
-    if (!dragging) return;
+    if (!pointersRef.current.has(event.pointerId)) return;
 
-    const deltaX = event.clientX - dragStart.x;
-    const deltaY = event.clientY - dragStart.y;
+    event.preventDefault();
 
-    setPosition({
-      x: dragStart.positionX + deltaX,
-      y: dragStart.positionY + deltaY,
+    pointersRef.current.set(event.pointerId, {
+      x: event.clientX,
+      y: event.clientY,
     });
+
+    // ZOOM COM DOIS DEDOS
+    if (
+      pointersRef.current.size === 2 &&
+      pinchStartRef.current
+    ) {
+      const currentDistance = getPointerDistance();
+
+      if (
+        currentDistance > 0 &&
+        pinchStartRef.current.distance > 0
+      ) {
+        const scale =
+          currentDistance /
+          pinchStartRef.current.distance;
+
+        const newZoom =
+          pinchStartRef.current.zoom * scale;
+
+        setZoom(
+          Math.min(
+            5,
+            Math.max(0.2, newZoom)
+          )
+        );
+      }
+
+      return;
+    }
+
+    // ARRASTAR COM UM DEDO
+    if (
+      pointersRef.current.size === 1 &&
+      dragStartRef.current
+    ) {
+      const deltaX =
+        event.clientX - dragStartRef.current.x;
+
+      const deltaY =
+        event.clientY - dragStartRef.current.y;
+
+      setPosition({
+        x: dragStartRef.current.positionX + deltaX,
+        y: dragStartRef.current.positionY + deltaY,
+      });
+    }
   }
 
   function handlePointerUp(event: PointerEvent<HTMLDivElement>) {
-    setDragging(false);
+    event.preventDefault();
 
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
+    pointersRef.current.delete(event.pointerId);
+
+    if (
+      event.currentTarget.hasPointerCapture(event.pointerId)
+    ) {
+      event.currentTarget.releasePointerCapture(
+        event.pointerId
+      );
+    }
+
+    // TERMINOU O ZOOM
+    if (pointersRef.current.size < 2) {
+      pinchStartRef.current = null;
+    }
+
+    // TODOS OS DEDOS SAÍRAM
+    if (pointersRef.current.size === 0) {
+      dragStartRef.current = null;
+      setDragging(false);
+      return;
+    }
+
+    // SOBROU UM DEDO DEPOIS DA PINÇA:
+    // começa um novo arraste a partir dali
+    if (pointersRef.current.size === 1) {
+      const remainingPointer =
+        Array.from(pointersRef.current.values())[0];
+
+      dragStartRef.current = {
+        x: remainingPointer.x,
+        y: remainingPointer.y,
+        positionX: position.x,
+        positionY: position.y,
+      };
+
+      setDragging(true);
     }
   }
 
@@ -113,7 +244,7 @@ export default function Home() {
 
     try {
       const userPhoto = await loadImage(photo);
-      const frame = await loadImage(selectedFrame);
+      const frame = await loadImage("/moldura-1.png");
 
       const SIZE = 1000;
 
@@ -177,102 +308,144 @@ export default function Home() {
       console.error(error);
 
       alert(
-        "Não foi possível gerar a imagem. Verifique se moldura-1.png e moldura-2.png estão dentro da pasta public."
+        "Não foi possível gerar a imagem. Verifique se moldura-1.png está dentro da pasta public."
       );
     }
   }
 
-  function downloadPhoto() {
-  if (!result) return;
+  async function downloadPhoto() {
+    if (!result) return;
 
-  const isIOS =
-    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === "MacIntel" &&
-      navigator.maxTouchPoints > 1);
+    try {
+      const response = await fetch(result);
+      const blob = await response.blob();
+      const fileUrl = URL.createObjectURL(blob);
 
-  if (isIOS) {
-    const newWindow = window.open();
+      const isIOS =
+        /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === "MacIntel" &&
+          navigator.maxTouchPoints > 1);
 
-    if (newWindow) {
-      newWindow.document.write(`
-        <!DOCTYPE html>
-        <html lang="pt-BR">
-          <head>
-            <meta
-              name="viewport"
-              content="width=device-width, initial-scale=1.0"
-            >
-            <title>Salvar sua foto</title>
+      const isInAppBrowser =
+        /Instagram|FBAN|FBAV|WhatsApp/i.test(navigator.userAgent);
 
-            <style>
-              body {
-                margin: 0;
-                background: #001F46;
-                color: white;
-                font-family: Arial, sans-serif;
-                text-align: center;
-                padding: 20px;
-              }
+      // iPhone/iPad ou navegador interno de rede social
+      if (isIOS || isInAppBrowser) {
+        const newWindow = window.open("", "_blank");
 
-              img {
-                width: 100%;
-                max-width: 1000px;
-                height: auto;
-                border-radius: 16px;
-                display: block;
-                margin: 20px auto;
-              }
+        if (newWindow) {
+          newWindow.document.write(`
+            <!DOCTYPE html>
+            <html lang="pt-BR">
+              <head>
+                <meta
+                  name="viewport"
+                  content="width=device-width, initial-scale=1.0"
+                />
+                <title>Salvar sua foto</title>
 
-              p {
-                line-height: 1.5;
-              }
-            </style>
-          </head>
+                <style>
+                  * { box-sizing: border-box; }
+                  body {
+                    margin: 0;
+                    background: #001F46;
+                    color: white;
+                    font-family: Arial, sans-serif;
+                    text-align: center;
+                    padding: 20px;
+                  }
+                  .container {
+                    max-width: 700px;
+                    margin: 0 auto;
+                  }
+                  h2 { margin-top: 10px; }
+                  p {
+                    line-height: 1.6;
+                    opacity: 0.9;
+                  }
+                  img {
+                    display: block;
+                    width: 100%;
+                    height: auto;
+                    margin: 20px auto;
+                    border-radius: 16px;
+                    background: white;
+                  }
+                  .aviso {
+                    margin-top: 15px;
+                    padding: 15px;
+                    border-radius: 12px;
+                    background: rgba(255,255,255,0.1);
+                    font-size: 14px;
+                  }
+                </style>
+              </head>
 
-          <body>
-            <h2>Sua foto está pronta!</h2>
+              <body>
+                <div class="container">
+                  <h2>✅ Sua foto está pronta!</h2>
 
-            <p>
-              Toque e segure a imagem abaixo e escolha
-              <strong>Salvar em Fotos</strong>.
-            </p>
+                  <p>
+                    Toque e segure a imagem abaixo e escolha
+                    <strong>Salvar imagem</strong> ou
+                    <strong>Salvar em Fotos</strong>.
+                  </p>
 
-            <img
-              src="${result}"
-              alt="Foto personalizada"
-            />
-          </body>
-        </html>
-      `);
+                  <img
+                    src="${result}"
+                    alt="Foto personalizada"
+                  />
 
-      newWindow.document.close();
+                  <div class="aviso">
+                    Se estiver usando o navegador do WhatsApp ou Instagram,
+                    abra esta página no Safari ou Chrome para salvar a imagem.
+                  </div>
+                </div>
+              </body>
+            </html>
+          `);
+
+          newWindow.document.close();
+        } else {
+          window.open(result, "_blank");
+        }
+
+        URL.revokeObjectURL(fileUrl);
+        return;
+      }
+
+      // Chrome / Edge / Android / computador
+      const link = document.createElement("a");
+      link.href = fileUrl;
+      link.download = "foto-andre-salineiro-22067.png";
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      setTimeout(() => {
+        URL.revokeObjectURL(fileUrl);
+      }, 1000);
+    } catch (error) {
+      console.error("Erro ao baixar imagem:", error);
+      window.open(result, "_blank");
     }
-
-    return;
   }
 
-  const link = document.createElement("a");
-  link.href = result;
-  link.download = "foto-andre-salineiro-22067.png";
-
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
-function resetPhoto() {
+  function resetPhoto() {
   setPhoto(null);
   setResult(null);
   setZoom(1);
   setPosition({ x: 0, y: 0 });
-  setSelectedFrame("/moldura-1.png");
+  
 }
 
-function resetPosition() {
+  function resetPosition() {
   setZoom(1);
   setPosition({ x: 0, y: 0 });
   setResult(null);
 }
-return (
+  return (
     <main
       className="min-h-screen px-3 py-5 text-white sm:px-6 sm:py-8"
       style={{
@@ -307,7 +480,7 @@ return (
   </div>
 
   <p className="mx-auto mt-4 max-w-2xl px-2 text-sm leading-6 text-white/80 sm:mt-6 sm:text-lg sm:leading-7">
-    Escolha sua foto, selecione a moldura que preferir
+    Escolha sua foto, ajuste o enquadramento
     e crie sua imagem personalizada.
   </p>
 
@@ -382,92 +555,10 @@ return (
             ) : (
               <>
 
-                {/* ESCOLHA DA MOLDURA */}
-
-                <div className="mt-6">
-
-                  <p className="font-black text-[#001F46]">
-                    Escolha sua moldura
-                  </p>
-
-                  <p className="mt-1 text-sm text-slate-500">
-                    Toque em uma opção para visualizar.
-                  </p>
-
-                  <div className="mt-4 grid grid-cols-2 gap-4">
-
-                    {/* MOLDURA 1 */}
-
-                    <button
-                      type="button"
-                      onClick={() => selectFrame("/moldura-1.png")}
-                      className={`overflow-hidden rounded-2xl border-4 transition ${
-                        selectedFrame === "/moldura-1.png"
-                          ? "border-[#00843D] shadow-lg"
-                          : "border-slate-200 hover:border-slate-300"
-                      }`}
-                    >
-                      <div className="relative aspect-square bg-slate-100">
-
-                        <img
-                          src="/moldura-1.png"
-                          alt="Moldura 1"
-                          className="absolute inset-0 h-full w-full object-contain"
-                        />
-
-                      </div>
-
-                      <div
-                        className={`py-3 text-sm font-black ${
-                          selectedFrame === "/moldura-1.png"
-                            ? "bg-[#00843D] text-white"
-                            : "bg-slate-100 text-[#003B73]"
-                        }`}
-                      >
-                        OPÇÃO 1
-                      </div>
-                    </button>
-
-                    {/* MOLDURA 2 */}
-
-                    <button
-                      type="button"
-                      onClick={() => selectFrame("/moldura-2.png")}
-                      className={`overflow-hidden rounded-2xl border-4 transition ${
-                        selectedFrame === "/moldura-2.png"
-                          ? "border-[#00843D] shadow-lg"
-                          : "border-slate-200 hover:border-slate-300"
-                      }`}
-                    >
-                      <div className="relative aspect-square bg-slate-100">
-
-                        <img
-                          src="/moldura-2.png"
-                          alt="Moldura 2"
-                          className="absolute inset-0 h-full w-full object-contain"
-                        />
-
-                      </div>
-
-                      <div
-                        className={`py-3 text-sm font-black ${
-                          selectedFrame === "/moldura-2.png"
-                            ? "bg-[#00843D] text-white"
-                            : "bg-slate-100 text-[#003B73]"
-                        }`}
-                      >
-                        OPÇÃO 2
-                      </div>
-                    </button>
-
-                  </div>
-
-                </div>
-
                 {/* EDITOR POWERCLIP */}
 
                 <p className="mt-6 text-sm font-medium text-slate-500">
-                  Arraste sua foto para posicioná-la dentro da moldura.
+                  Arraste para posicionar. Use dois dedos para aumentar ou diminuir o zoom.
                 </p>
 
                 <div
@@ -509,8 +600,8 @@ return (
                   {/* MOLDURA SELECIONADA */}
 
                   <img
-                    src={selectedFrame}
-                    alt="Moldura selecionada"
+                    src="/moldura-1.png"
+                    alt="Moldura da campanha"
                     draggable={false}
                     className="pointer-events-none absolute inset-0 z-20 h-full w-full select-none object-fill"
                   />
@@ -674,8 +765,8 @@ return (
                   </p>
 
                   <p className="mt-2 text-sm text-white/60">
-                    Escolha uma foto, selecione sua moldura,
-                    faça o enquadramento e clique em gerar.
+                    Escolha uma foto, faça o enquadramento
+                    e clique em gerar.
                   </p>
 
                 </div>
