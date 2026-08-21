@@ -313,123 +313,216 @@ const canvasRef = useRef<HTMLCanvasElement | null>(null);
     }
   }
 
-  async function downloadPhoto() {
+  function downloadPhoto() {
     if (!result) return;
 
-    try {
-      const response = await fetch(result);
-      const blob = await response.blob();
-      const fileUrl = URL.createObjectURL(blob);
+    const ua = navigator.userAgent;
 
-      const isIOS =
-        /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-        (navigator.platform === "MacIntel" &&
-          navigator.maxTouchPoints > 1);
+    const isIOS =
+      /iPad|iPhone|iPod/.test(ua) ||
+      (navigator.platform === "MacIntel" &&
+        navigator.maxTouchPoints > 1);
 
-      const isInAppBrowser =
-        /Instagram|FBAN|FBAV|WhatsApp/i.test(navigator.userAgent);
+    const isAndroid = /Android/i.test(ua);
 
-      // iPhone/iPad ou navegador interno de rede social
-      if (isIOS || isInAppBrowser) {
-        const newWindow = window.open("", "_blank");
+    // iPhone / iPad:
+    // mantém o fluxo que já estava funcionando.
+    if (isIOS) {
+      const newWindow = window.open("", "_blank");
 
-        if (newWindow) {
-          newWindow.document.write(`
-            <!DOCTYPE html>
-            <html lang="pt-BR">
-              <head>
-                <meta
-                  name="viewport"
-                  content="width=device-width, initial-scale=1.0"
+      if (newWindow) {
+        newWindow.document.write(`
+          <!DOCTYPE html>
+          <html lang="pt-BR">
+            <head>
+              <meta
+                name="viewport"
+                content="width=device-width, initial-scale=1.0"
+              />
+              <title>Salvar sua foto</title>
+
+              <style>
+                * {
+                  box-sizing: border-box;
+                }
+
+                body {
+                  margin: 0;
+                  background: #001F46;
+                  color: white;
+                  font-family: Arial, sans-serif;
+                  text-align: center;
+                  padding: 20px;
+                }
+
+                .container {
+                  max-width: 700px;
+                  margin: 0 auto;
+                }
+
+                h2 {
+                  margin-top: 10px;
+                }
+
+                p {
+                  line-height: 1.6;
+                  opacity: 0.9;
+                }
+
+                img {
+                  display: block;
+                  width: 100%;
+                  height: auto;
+                  margin: 20px auto;
+                  border-radius: 16px;
+                  background: white;
+                }
+
+                .aviso {
+                  margin-top: 16px;
+                  padding: 14px;
+                  border-radius: 12px;
+                  background: rgba(255,255,255,0.1);
+                  font-size: 14px;
+                }
+              </style>
+            </head>
+
+            <body>
+              <div class="container">
+                <h2>✅ Sua foto está pronta!</h2>
+
+                <p>
+                  Toque e segure a imagem abaixo e escolha
+                  <strong>Salvar em Fotos</strong>.
+                </p>
+
+                <img
+                  src="${result}"
+                  alt="Foto personalizada"
                 />
-                <title>Salvar sua foto</title>
 
-                <style>
-                  * { box-sizing: border-box; }
-                  body {
-                    margin: 0;
-                    background: #001F46;
-                    color: white;
-                    font-family: Arial, sans-serif;
-                    text-align: center;
-                    padding: 20px;
-                  }
-                  .container {
-                    max-width: 700px;
-                    margin: 0 auto;
-                  }
-                  h2 { margin-top: 10px; }
-                  p {
-                    line-height: 1.6;
-                    opacity: 0.9;
-                  }
-                  img {
-                    display: block;
-                    width: 100%;
-                    height: auto;
-                    margin: 20px auto;
-                    border-radius: 16px;
-                    background: white;
-                  }
-                  .aviso {
-                    margin-top: 15px;
-                    padding: 15px;
-                    border-radius: 12px;
-                    background: rgba(255,255,255,0.1);
-                    font-size: 14px;
-                  }
-                </style>
-              </head>
-
-              <body>
-                <div class="container">
-                  <h2>✅ Sua foto está pronta!</h2>
-
-                  <p>
-                    Toque e segure a imagem abaixo e escolha
-                    <strong>Salvar imagem</strong> ou
-                    <strong>Salvar em Fotos</strong>.
-                  </p>
-
-                  <img
-                    src="${result}"
-                    alt="Foto personalizada"
-                  />
-
-                  <div class="aviso">
-                    Se estiver usando o navegador do WhatsApp ou Instagram,
-                    abra esta página no Safari ou Chrome para salvar a imagem.
-                  </div>
+                <div class="aviso">
+                  Se o site estiver aberto dentro do WhatsApp ou Instagram,
+                  use a opção de abrir no Safari para salvar a imagem.
                 </div>
-              </body>
-            </html>
-          `);
+              </div>
+            </body>
+          </html>
+        `);
 
-          newWindow.document.close();
-        } else {
-          window.open(result, "_blank");
-        }
-
-        URL.revokeObjectURL(fileUrl);
-        return;
+        newWindow.document.close();
+      } else {
+        window.open(result, "_blank");
       }
 
-      // Chrome / Edge / Android / computador
-      const link = document.createElement("a");
-      link.href = fileUrl;
-      link.download = "foto-andre-salineiro-22067.png";
-
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      setTimeout(() => {
-        URL.revokeObjectURL(fileUrl);
-      }, 1000);
-    } catch (error) {
-      console.error("Erro ao baixar imagem:", error);
-      window.open(result, "_blank");
+      return;
     }
+
+    // Android:
+    // alguns navegadores móveis ignoram o atributo download em imagens
+    // geradas pelo canvas. Abrimos a imagem para permitir "Baixar imagem".
+    if (isAndroid) {
+      const newWindow = window.open("", "_blank");
+
+      if (newWindow) {
+        newWindow.document.write(`
+          <!DOCTYPE html>
+          <html lang="pt-BR">
+            <head>
+              <meta
+                name="viewport"
+                content="width=device-width, initial-scale=1.0"
+              />
+              <title>Baixar sua foto</title>
+
+              <style>
+                * {
+                  box-sizing: border-box;
+                }
+
+                body {
+                  margin: 0;
+                  background: #001F46;
+                  color: white;
+                  font-family: Arial, sans-serif;
+                  text-align: center;
+                  padding: 20px;
+                }
+
+                .container {
+                  max-width: 700px;
+                  margin: 0 auto;
+                }
+
+                h2 {
+                  margin-top: 10px;
+                }
+
+                p {
+                  line-height: 1.6;
+                  opacity: 0.9;
+                }
+
+                img {
+                  display: block;
+                  width: 100%;
+                  height: auto;
+                  margin: 20px auto;
+                  border-radius: 16px;
+                  background: white;
+                }
+
+                .aviso {
+                  margin-top: 16px;
+                  padding: 14px;
+                  border-radius: 12px;
+                  background: rgba(255,255,255,0.1);
+                  font-size: 14px;
+                }
+              </style>
+            </head>
+
+            <body>
+              <div class="container">
+                <h2>✅ Sua foto está pronta!</h2>
+
+                <p>
+                  Toque e segure a imagem abaixo e escolha
+                  <strong>Baixar imagem</strong> ou
+                  <strong>Salvar imagem</strong>.
+                </p>
+
+                <img
+                  src="${result}"
+                  alt="Foto personalizada"
+                />
+
+                <div class="aviso">
+                  Se estiver usando o navegador do WhatsApp ou Instagram,
+                  abra a página no Chrome para salvar a imagem.
+                </div>
+              </div>
+            </body>
+          </html>
+        `);
+
+        newWindow.document.close();
+      } else {
+        window.open(result, "_blank");
+      }
+
+      return;
+    }
+
+    // Computador / navegadores desktop
+    const link = document.createElement("a");
+    link.href = result;
+    link.download = "foto-andre-salineiro-22067.png";
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   function resetPhoto() {
